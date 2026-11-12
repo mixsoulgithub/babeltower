@@ -28,11 +28,11 @@ fn setup() -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf) {
 }
 
 fn run(dir: &Path, csv: &Path, dict: &Path, args: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_aitr"))
+    Command::new(env!("CARGO_BIN_EXE_bbt"))
         .args(args)
-        .env("AITR_CSV", csv)
-        .env("AITR_DICT", dict)
-        .env("AITR_CONFIG_DIR", dir.join("config"))
+        .env("BBT_CSV", csv)
+        .env("BBT_DICT", dict)
+        .env("BBT_CONFIG_DIR", dir.join("config"))
         .output()
         .unwrap()
 }

@@ -524,10 +524,7 @@ impl App {
             Ok(result) if result.entries.is_empty() => {
                 self.lookup_state = LookupState::NotFound;
                 if result.dict_missing {
-                    self.set_message(
-                        "dictionary missing: aitr dict fetch && aitr dict build",
-                        true,
-                    );
+                    self.set_message("dictionary missing: bbt dict fetch && bbt dict build", true);
                 }
             }
             Ok(result) => {
@@ -801,9 +798,7 @@ impl App {
                 Some(tab) => self.switch_tab(tab),
                 None => self.set_message("usage: :tab lookup|words|review|stats", true),
             },
-            "version" => {
-                self.set_message(format!("babeltower {}", env!("CARGO_PKG_VERSION")), false)
-            }
+            "version" => self.set_message(format!("bbt {}", env!("CARGO_PKG_VERSION")), false),
             other => self.set_message(format!("unknown command: {other}"), true),
         }
     }

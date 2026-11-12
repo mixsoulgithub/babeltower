@@ -42,10 +42,10 @@ jobs:
       - name: smoke
         run: |
           cargo build --release --target ${{ matrix.target }}
-          ./target/${{ matrix.target }}/release/aitr --version
+          ./target/${{ matrix.target }}/release/bbt --version
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: aitr
+          bin: bbt
           target: ${{ matrix.target }}
           archive: babeltower-$target
           include: README.md

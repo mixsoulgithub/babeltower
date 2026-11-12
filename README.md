@@ -2,7 +2,7 @@
 
 Single-binary language learning entry for the terminal. Words are looked up in
 an offline SQLite dictionary; sentences go through DeepSeek. The wordbook is
-one CSV file, writable offline and mergeable with `aitr merge`. There is no
+one CSV file, writable offline and mergeable with `bbt merge`. There is no
 daemon, web UI, database server, or network requirement for word lookup.
 
 ## Install
@@ -12,7 +12,7 @@ curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/insta
 ```
 
 The `curl` installer needs no sudo. It downloads the release archive for the
-current platform, verifies the sha256 file, installs `aitr` into `~/.local/bin`
+current platform, verifies the sha256 file, installs `bbt` into `~/.local/bin`
 (override with `--dir`), and accepts an explicit `--version`:
 
 ```bash
@@ -21,7 +21,7 @@ curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/insta
 ```
 
 Release assets are `babeltower-<target>.tar.gz` plus
-`babeltower-<target>.sha256`; the archive contains the `aitr` binary. Pushing a
+`babeltower-<target>.sha256`; the archive contains the `bbt` binary. Pushing a
 `v*` tag runs `.github/workflows/release.yml` and builds Linux x86_64 and macOS
 x86_64/arm64 assets.
 
@@ -29,25 +29,25 @@ x86_64/arm64 assets.
 
 ```bash
 cargo build --release
-./bin/aitr
+./bin/bbt
 ```
 
-`bin/aitr` is a shell shim for `target/release/aitr`. To install a local build:
+`bin/bbt` is a shell shim for `target/release/bbt`. To install a local build:
 
 ```bash
-ln -sfn ~/projects/babeltower/bin/aitr ~/.local/bin/aitr
+ln -sfn ~/projects/babeltower/bin/bbt ~/.local/bin/bbt
 ```
 
 After either install, fetch and build the offline dictionary once:
 
 ```bash
-aitr dict fetch
-aitr dict build
+bbt dict fetch
+bbt dict build
 ```
 
 ## Data
 
-Path: `~/.local/share/words/words.csv` (`AITR_CSV` overrides). UTF-8 CSV with
+Path: `~/.local/share/words/words.csv` (`BBT_CSV` overrides). UTF-8 CSV with
 a fixed header:
 
 ```
@@ -57,8 +57,8 @@ uuid,word,translation,phonetic,tags,hit,last,box,due,reviews,reviewed,updated,or
 - `uuid`: stable identity. Migration and new rows use UUIDv5 of
   `babeltower:` + casefolded word, so two machines converge on the same word.
 - `updated`: Unix seconds of the last content change, used by merge.
-- `origin`: `AITR_ORIGIN`, or first 12 hex chars of sha256(`/etc/machine-id`).
-- `deleted`: tombstone flag. Deletes are never physical; use `aitr gc --force`.
+- `origin`: `BBT_ORIGIN`, or first 12 hex chars of sha256(`/etc/machine-id`).
+- `deleted`: tombstone flag. Deletes are never physical; use `bbt gc --force`.
 - `box` 1..5, intervals 1/2/4/8/16 days. `good` advances a box and schedules
   from the current box; `again` resets to box 1 and makes the word due today.
 - `last`, `due`, `reviewed`: `YYYY-MM-DD` or empty.
@@ -71,19 +71,19 @@ to `<csv>.v1.bak` if it does not exist.
 ## Dictionary
 
 ```
-aitr dict fetch                 # ECDICT + CC-CEDICT, refuses overwrite without --force
-aitr dict fetch --ecdict
-aitr dict fetch --cedict --force
-aitr dict build                 # default paths
-aitr dict build --ecdict ./ecdict.csv --cedict ./cedict.txt --out ./dict.sqlite
-aitr dict info
+bbt dict fetch                 # ECDICT + CC-CEDICT, refuses overwrite without --force
+bbt dict fetch --ecdict
+bbt dict fetch --cedict --force
+bbt dict build                 # default paths
+bbt dict build --ecdict ./ecdict.csv --cedict ./cedict.txt --out ./dict.sqlite
+bbt dict info
 ```
 
 Default files:
 
-- `~/.local/share/babeltower/ecdict.csv` (`AITR_DATA_DIR` overrides the dir)
+- `~/.local/share/babeltower/ecdict.csv` (`BBT_DATA_DIR` overrides the dir)
 - `~/.local/share/babeltower/cedict.txt`
-- `~/.local/share/babeltower/dict.sqlite` (`AITR_DICT` overrides the file)
+- `~/.local/share/babeltower/dict.sqlite` (`BBT_DICT` overrides the file)
 
 Sources and licenses:
 
@@ -93,7 +93,7 @@ Sources and licenses:
   CC BY-SA 4.0. The gzip is downloaded from
   `mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz`.
 
-`aitr dict fetch` and sentence translation use reqwest, which honors
+`bbt dict fetch` and sentence translation use reqwest, which honors
 `HTTPS_PROXY`/`HTTP_PROXY` when the network needs a proxy. The builder streams
 both sources into a temporary SQLite file and renames it into place. ECDICT `translation`/`definition` literal `\n` becomes a real
 newline; every sense is kept. CC-CEDICT inserts the simplified head and, when
@@ -108,7 +108,7 @@ UI shows every sense; `box` shows the noun and verb senses together.
 ## AI
 
 Only sentences (or `--ai`) use DeepSeek. Key resolution:
-`DEEPSEEK_API_KEY`, then `~/.config/aitr/deepseek` (`AITR_CONFIG_DIR` overrides
+`DEEPSEEK_API_KEY`, then `~/.config/bbt/deepseek` (`BBT_CONFIG_DIR` overrides
 the directory). Request: `deepseek-chat`, max_tokens 1024, temperature 0,
 30 second timeout. Results are cached in-process (256 entries, FIFO). Word
 lookup never touches the network.
@@ -116,18 +116,18 @@ lookup never touches the network.
 ## CLI
 
 ```
-aitr                        # TUI
-aitr box                    # dictionary or AI, prints translation
-aitr -f box                 # source + translation
-aitr -r box                 # query and save
-aitr -l                     # wordbook CSV: hit,word,translation,last
-echo text | aitr            # stdin
-aitr --ai some text         # force AI
-aitr merge other.csv [--dry-run] [--report report.csv]
-aitr import old-v1.csv
-aitr gc [--days 90] [--force]
-aitr dict fetch|build|info
-aitr --version
+bbt                        # TUI
+bbt box                    # dictionary or AI, prints translation
+bbt -f box                 # source + translation
+bbt -r box                 # query and save
+bbt -l                     # wordbook CSV: hit,word,translation,last
+echo text | bbt            # stdin
+bbt --ai some text         # force AI
+bbt merge other.csv [--dry-run] [--report report.csv]
+bbt import old-v1.csv
+bbt gc [--days 90] [--force]
+bbt dict fetch|build|info
+bbt --version
 ```
 
 Merge is row-level last-writer-wins on `(updated, origin)`. Counters `hit` and
@@ -168,7 +168,7 @@ Review:
 Layout switches at 100 columns (nav rail plus Words list/preview), 80 columns
 (narrow 5-column rail, no preview), and below 80 columns (no rail). Below
 60x16 only `terminal too small` is shown. `NO_COLOR=1` or
-`AITR_THEME=mono` keeps selection, errors, and modes distinguishable without
+`BBT_THEME=mono` keeps selection, errors, and modes distinguishable without
 color.
 
 Commands: `:q`, `:help`, `:ai`, `:dict`, `:merge <path>`, `:import <path>`,

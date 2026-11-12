@@ -617,24 +617,24 @@ fn dedupe_word(rows: &mut Vec<WordRow>, legacy: bool) {
 }
 
 pub fn default_csv_path() -> PathBuf {
-    if let Ok(value) = std::env::var("AITR_CSV") {
+    if let Ok(value) = std::env::var("BBT_CSV") {
         return PathBuf::from(value);
     }
     home_dir().join(".local/share/words/words.csv")
 }
 
 pub fn data_dir() -> PathBuf {
-    if let Ok(value) = std::env::var("AITR_DATA_DIR") {
+    if let Ok(value) = std::env::var("BBT_DATA_DIR") {
         return PathBuf::from(value);
     }
     home_dir().join(".local/share/babeltower")
 }
 
 pub fn config_dir() -> PathBuf {
-    if let Ok(value) = std::env::var("AITR_CONFIG_DIR") {
+    if let Ok(value) = std::env::var("BBT_CONFIG_DIR") {
         return PathBuf::from(value);
     }
-    home_dir().join(".config/aitr")
+    home_dir().join(".config/bbt")
 }
 
 pub fn home_dir() -> PathBuf {
@@ -710,7 +710,7 @@ pub fn uuid_for(word: &str) -> String {
 }
 
 pub fn origin_id() -> String {
-    if let Ok(value) = std::env::var("AITR_ORIGIN") {
+    if let Ok(value) = std::env::var("BBT_ORIGIN") {
         let value = value.trim();
         if !value.is_empty() {
             return value.to_string();

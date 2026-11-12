@@ -70,7 +70,7 @@ impl Translator {
         let key = self
             .key
             .as_ref()
-            .context("DEEPSEEK_API_KEY not set (env or ~/.config/aitr/deepseek)")?;
+            .context("DEEPSEEK_API_KEY not set (env or ~/.config/bbt/deepseek)")?;
         let body = Request {
             model: "deepseek-chat",
             messages: vec![Message {

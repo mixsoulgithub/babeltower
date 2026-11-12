@@ -76,7 +76,7 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(0), Constraint::Length(38)])
         .split(area);
-    let mut spans = vec![Span::styled("aitr ", app.theme.title)];
+    let mut spans = vec![Span::styled("bbt ", app.theme.title)];
     for tab in Tab::all() {
         let style = if app.tab == tab {
             app.theme.selected.add_modifier(Modifier::BOLD)

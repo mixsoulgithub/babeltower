@@ -13,7 +13,7 @@ use crate::translate::Translator;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "aitr",
+    name = "bbt",
     version,
     about = "Offline dictionary and Leitner review for the terminal"
 )]
@@ -89,7 +89,7 @@ pub fn main() -> i32 {
     match run(cli) {
         Ok(code) => code,
         Err(error) => {
-            eprintln!("aitr: {error:#}");
+            eprintln!("bbt: {error:#}");
             1
         }
     }
@@ -115,7 +115,7 @@ fn run(cli: Cli) -> Result<i32> {
         cli.text.join(" ")
     };
     if text.trim().is_empty() {
-        eprintln!("aitr: no input");
+        eprintln!("bbt: no input");
         return Ok(1);
     }
     lookup_and_print(&text, cli.format, cli.record, cli.ai)
@@ -133,12 +133,12 @@ fn lookup_and_print(text: &str, format: bool, record: bool, force_ai: bool) -> R
     } else {
         let lookup = dict::lookup_word(text, 20)?;
         if lookup.dict_missing {
-            eprintln!("aitr: dictionary missing; run `aitr dict fetch` then `aitr dict build`");
+            eprintln!("bbt: dictionary missing; run `bbt dict fetch` then `bbt dict build`");
             return Ok(1);
         }
         if lookup.entries.is_empty() {
-            eprintln!("aitr: not found in offline dict");
-            eprintln!("aitr: use a sentence or `--ai` to force AI");
+            eprintln!("bbt: not found in offline dict");
+            eprintln!("bbt: use a sentence or `--ai` to force AI");
             return Ok(1);
         }
         let value = dict::cli_lookup_text(&lookup);

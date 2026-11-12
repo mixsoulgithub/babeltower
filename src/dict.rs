@@ -66,7 +66,7 @@ pub fn default_cedict_path() -> PathBuf {
 }
 
 pub fn dict_path() -> PathBuf {
-    if let Ok(value) = std::env::var("AITR_DICT") {
+    if let Ok(value) = std::env::var("BBT_DICT") {
         return PathBuf::from(value);
     }
     data_dir().join("dict.sqlite")
@@ -111,7 +111,7 @@ pub fn entry_translation(entry: &Entry) -> String {
 fn open_readonly_path(path: &Path) -> Result<Connection> {
     if !path.is_file() {
         bail!(
-            "dictionary missing at {}; run `aitr dict fetch` then `aitr dict build`",
+            "dictionary missing at {}; run `bbt dict fetch` then `bbt dict build`",
             path.display()
         );
     }
@@ -364,7 +364,7 @@ pub fn build(
         .unwrap_or_else(default_cedict_path);
     if !ecdict.exists() && !cedict.exists() {
         bail!(
-            "no dictionary sources found at {} or {}; run `aitr dict fetch`",
+            "no dictionary sources found at {} or {}; run `bbt dict fetch`",
             ecdict.display(),
             cedict.display()
         );

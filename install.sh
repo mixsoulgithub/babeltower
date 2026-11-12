@@ -112,13 +112,13 @@ got=${got%% *}
 [ "$got" = "$want" ] || die "sha256 mismatch (expected $want, got $got)"
 
 tar -xzf "$tmp/$archive" -C "$tmp" || die "cannot unpack $archive"
-[ -f "$tmp/aitr" ] || die "archive does not contain aitr"
+[ -f "$tmp/bbt" ] || die "archive does not contain bbt"
 
 mkdir -p "$DIR" || die "cannot create $DIR"
-install -m 755 "$tmp/aitr" "$DIR/aitr" || die "cannot install to $DIR"
+install -m 755 "$tmp/bbt" "$DIR/bbt" || die "cannot install to $DIR"
 
-printf 'installed %s\n' "$DIR/aitr" >&2
-"$DIR/aitr" --version || true
+printf 'installed %s\n' "$DIR/bbt" >&2
+"$DIR/bbt" --version || true
 case ":$PATH:" in
   *":$DIR:"*) ;;
   *) printf 'note: %s is not on PATH\n' "$DIR" >&2 ;;

@@ -19,7 +19,7 @@ pub struct Theme {
 impl Theme {
     pub fn load() -> Self {
         let mono = std::env::var_os("NO_COLOR").is_some()
-            || std::env::var("AITR_THEME")
+            || std::env::var("BBT_THEME")
                 .map(|value| value == "mono")
                 .unwrap_or(false);
         if mono {
