@@ -131,9 +131,12 @@ fn lookup_and_print(text: &str, format: bool, record: bool, force_ai: bool) -> R
         let translator = Translator::new()?;
         translator.translate(text)?.translation
     } else {
+        if !dict::dict_available() {
+            dict::ensure_dictionary().context("install dictionary")?;
+        }
         let lookup = dict::lookup_word(text, 20)?;
         if lookup.dict_missing {
-            eprintln!("bbt: dictionary missing; run `bbt dict fetch` then `bbt dict build`");
+            eprintln!("bbt: dictionary missing after install attempt");
             return Ok(1);
         }
         if lookup.entries.is_empty() {

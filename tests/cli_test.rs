@@ -113,3 +113,26 @@ fn merges_and_imports_v1() {
             .contains("mergeword")
     );
 }
+
+#[test]
+fn first_word_query_installs_dictionary() {
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    std::fs::copy(fixture("ecdict.csv"), data.join("ecdict.csv")).unwrap();
+    std::fs::copy(fixture("cedict.txt"), data.join("cedict.txt")).unwrap();
+    let csv = dir.path().join("words.csv");
+    let dict = dir.path().join("dict.sqlite");
+    std::fs::write(&csv, "uuid,word,translation,phonetic,tags,hit,last,box,due,reviews,reviewed,updated,origin,deleted\n").unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_bbt"))
+        .args(["box"])
+        .env("BBT_CSV", &csv)
+        .env("BBT_DICT", &dict)
+        .env("BBT_DATA_DIR", &data)
+        .env("BBT_CONFIG_DIR", dir.path().join("config"))
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{:?}", output);
+    assert!(String::from_utf8(output.stdout).unwrap().contains("盒子"));
+    assert!(dict.exists());
+}

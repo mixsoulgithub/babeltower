@@ -103,6 +103,9 @@ pub enum LookupState {
     Loading {
         source: String,
     },
+    Installing {
+        source: String,
+    },
     Error(String),
 }
 
@@ -249,6 +252,8 @@ pub struct App {
     pub(crate) command_pos: usize,
     pub(crate) help_scroll: u16,
     pub(crate) pending_ai: Option<(u64, String)>,
+    pub(crate) dict_installing: bool,
+    pub(crate) pending_dict_query: Option<String>,
     pub(crate) next_request: u64,
     pub(crate) spinner: usize,
     pub(crate) pending_g: bool,
@@ -256,12 +261,15 @@ pub struct App {
     pub(crate) should_quit: bool,
     ai_tx: Sender<AiMessage>,
     ai_rx: Receiver<AiMessage>,
+    dict_tx: Sender<Result<(), String>>,
+    dict_rx: Receiver<Result<(), String>>,
     mtime: Option<SystemTime>,
 }
 
 impl App {
     pub fn new(store: Store) -> Self {
         let (ai_tx, ai_rx) = mpsc::channel();
+        let (dict_tx, dict_rx) = mpsc::channel();
         let rows = store.words().unwrap_or_default();
         let stats = store.stats().ok();
         let mtime = mtime_of(&store);
@@ -295,6 +303,8 @@ impl App {
             command_pos: 0,
             help_scroll: 0,
             pending_ai: None,
+            dict_installing: false,
+            pending_dict_query: None,
             next_request: 0,
             spinner: 0,
             pending_g: false,
@@ -302,6 +312,8 @@ impl App {
             should_quit: false,
             ai_tx,
             ai_rx,
+            dict_tx,
+            dict_rx,
             mtime,
         }
     }
@@ -448,6 +460,27 @@ impl App {
         }
     }
 
+    fn poll_dict(&mut self) {
+        while let Ok(result) = self.dict_rx.try_recv() {
+            self.dict_installing = false;
+            match result {
+                Ok(()) => {
+                    self.set_message("dictionary installed", false);
+                    self.reload_stats();
+                    if let Some(text) = self.pending_dict_query.take() {
+                        self.perform_word_lookup(text);
+                    }
+                }
+                Err(error) => {
+                    self.pending_dict_query = None;
+                    let message = format!("dictionary install failed: {error}");
+                    self.lookup_state = LookupState::Error(message.clone());
+                    self.set_message(message, true);
+                }
+            }
+        }
+    }
+
     fn poll_ai(&mut self) {
         while let Ok(message) = self.ai_rx.try_recv() {
             if self.pending_ai.as_ref().map(|(id, _)| *id) != Some(message.id) {
@@ -520,11 +553,34 @@ impl App {
             self.spawn_ai(text, AiContext::Lookup);
             return;
         }
+        if !dict::dict_available() {
+            self.install_dictionary(text);
+            return;
+        }
+        self.perform_word_lookup(text);
+    }
+
+    fn install_dictionary(&mut self, text: String) {
+        self.pending_dict_query = Some(text.clone());
+        self.lookup_state = LookupState::Installing { source: text };
+        if self.dict_installing {
+            return;
+        }
+        self.dict_installing = true;
+        self.set_message("dictionary missing; installing...", false);
+        let tx = self.dict_tx.clone();
+        std::thread::spawn(move || {
+            let result = dict::ensure_dictionary().map_err(|error| format!("{error:#}"));
+            let _ = tx.send(result);
+        });
+    }
+
+    fn perform_word_lookup(&mut self, text: String) {
         match dict::lookup_word(&text, 20) {
             Ok(result) if result.entries.is_empty() => {
                 self.lookup_state = LookupState::NotFound;
                 if result.dict_missing {
-                    self.set_message("dictionary missing: bbt dict fetch && bbt dict build", true);
+                    self.set_message("dictionary missing; install failed", true);
                 }
             }
             Ok(result) => {
@@ -1538,6 +1594,7 @@ impl App {
                 }
             }
             self.tick();
+            self.poll_dict();
             self.poll_ai();
             if self.should_quit {
                 return Ok(());
@@ -1557,6 +1614,8 @@ fn mtime_of(store: &Store) -> Option<SystemTime> {
 }
 
 pub fn run(store: Store) -> Result<()> {
+    crate::dict::set_quiet(true);
+    crate::merge::set_quiet(true);
     enable_raw_mode().context("enable raw mode")?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;

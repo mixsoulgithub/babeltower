@@ -59,3 +59,18 @@ fn missing_database_is_reported() {
     assert!(result.dict_missing);
     assert!(result.entries.is_empty());
 }
+
+#[test]
+fn ensures_missing_dictionary_from_local_sources() {
+    let dir = tempfile::tempdir().unwrap();
+    let data = dir.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    std::fs::copy(fixture("ecdict.csv"), data.join("ecdict.csv")).unwrap();
+    std::fs::copy(fixture("cedict.txt"), data.join("cedict.txt")).unwrap();
+    let out = dir.path().join("dict.sqlite");
+    assert!(!out.exists());
+    dict::ensure_dictionary_at(&out, &data).unwrap();
+    assert!(out.exists());
+    let result = dict::lookup_in(&out, "box", 20).unwrap();
+    assert!(!result.entries.is_empty());
+}

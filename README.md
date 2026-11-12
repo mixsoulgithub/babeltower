@@ -38,7 +38,9 @@ cargo build --release
 ln -sfn ~/projects/babeltower/bin/bbt ~/.local/bin/bbt
 ```
 
-After either install, fetch and build the offline dictionary once:
+The first word query installs the dictionary automatically when `dict.sqlite`
+is missing: it downloads ECDICT + CC-CEDICT and builds the database. To
+pre-warm it, or to rebuild after a failed download, run:
 
 ```bash
 bbt dict fetch
@@ -71,6 +73,7 @@ to `<csv>.v1.bak` if it does not exist.
 ## Dictionary
 
 ```
+# The first word query runs this automatically when dict.sqlite is missing.
 bbt dict fetch                 # ECDICT + CC-CEDICT, refuses overwrite without --force
 bbt dict fetch --ecdict
 bbt dict fetch --cedict --force

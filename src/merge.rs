@@ -1,10 +1,21 @@
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::{Context, Result};
 use csv::WriterBuilder;
 
 use crate::store::{self, Store, WordRow};
+
+static QUIET: AtomicBool = AtomicBool::new(false);
+
+pub fn set_quiet(value: bool) {
+    QUIET.store(value, Ordering::Relaxed);
+}
+
+fn quiet() -> bool {
+    QUIET.load(Ordering::Relaxed)
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct MergeStats {
@@ -44,10 +55,12 @@ pub fn merge(
     if let Some(path) = report {
         write_report(path, &conflicts)?;
     }
-    eprintln!(
-        "merge: added {} updated {} unchanged {} conflicts {}",
-        stats.added, stats.updated, stats.unchanged, stats.conflicts
-    );
+    if !quiet() {
+        eprintln!(
+            "merge: added {} updated {} unchanged {} conflicts {}",
+            stats.added, stats.updated, stats.unchanged, stats.conflicts
+        );
+    }
     Ok(stats)
 }
 
@@ -68,7 +81,9 @@ pub fn gc(store: &Store, days: i64, force: bool) -> Result<usize> {
             .iter()
             .filter(|row| row.deleted != 0 && row.updated < cutoff)
             .count();
-        eprintln!("gc: {count} tombstones older than {days} days (use --force)");
+        if !quiet() {
+            eprintln!("gc: {count} tombstones older than {days} days (use --force)");
+        }
         return Ok(count);
     }
     let mut removed = 0usize;
@@ -78,7 +93,9 @@ pub fn gc(store: &Store, days: i64, force: bool) -> Result<usize> {
         removed = before - rows.len();
         Ok(())
     })?;
-    eprintln!("gc: removed {removed} tombstones");
+    if !quiet() {
+        eprintln!("gc: removed {removed} tombstones");
+    }
     Ok(removed)
 }
 

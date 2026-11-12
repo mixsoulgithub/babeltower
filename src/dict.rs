@@ -1,10 +1,12 @@
 use std::collections::HashSet;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::{Context, Result, bail};
 use flate2::read::GzDecoder;
+use fs2::FileExt;
 use reqwest::blocking::Client;
 use rusqlite::{Connection, OpenFlags, params};
 use sha2::{Digest, Sha256};
@@ -16,6 +18,16 @@ pub const ECDICT_URL: &str =
     "https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv";
 pub const CEDICT_URL: &str =
     "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz";
+
+static QUIET: AtomicBool = AtomicBool::new(false);
+
+pub fn set_quiet(value: bool) {
+    QUIET.store(value, Ordering::Relaxed);
+}
+
+fn quiet() -> bool {
+    QUIET.load(Ordering::Relaxed)
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct Entry {
@@ -247,15 +259,85 @@ pub fn fetch(ecdict: bool, cedict: bool, force: bool) -> Result<()> {
     } else {
         (ecdict, cedict)
     };
+    fetch_paths(
+        &default_ecdict_path(),
+        &default_cedict_path(),
+        ecdict,
+        cedict,
+        force,
+    )
+}
+
+fn fetch_paths(
+    ecdict_path: &Path,
+    cedict_path: &Path,
+    ecdict: bool,
+    cedict: bool,
+    force: bool,
+) -> Result<()> {
+    if !ecdict && !cedict {
+        return Ok(());
+    }
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(600))
         .build()?;
     if ecdict {
-        download(&client, ECDICT_URL, &default_ecdict_path(), force, false)?;
+        download(&client, ECDICT_URL, ecdict_path, force, false)?;
     }
     if cedict {
-        download(&client, CEDICT_URL, &default_cedict_path(), force, true)?;
+        download(&client, CEDICT_URL, cedict_path, force, true)?;
     }
+    Ok(())
+}
+
+pub fn ensure_dictionary() -> Result<()> {
+    ensure_dictionary_at(&dict_path(), &data_dir())
+}
+
+pub fn ensure_dictionary_at(dict: &Path, data_dir: &Path) -> Result<()> {
+    if dict.is_file() {
+        return Ok(());
+    }
+    if let Some(parent) = dict.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let lock_path = PathBuf::from(format!("{}.install.lock", dict.display()));
+    let lock = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)
+        .with_context(|| format!("open {}", lock_path.display()))?;
+    lock.lock_exclusive()
+        .with_context(|| format!("lock {}", lock_path.display()))?;
+    if dict.is_file() {
+        return Ok(());
+    }
+    let ecdict = data_dir.join("ecdict.csv");
+    let cedict = data_dir.join("cedict.txt");
+    let need_ecdict = !ecdict.exists();
+    let need_cedict = !cedict.exists();
+    if !quiet() {
+        if need_ecdict || need_cedict {
+            eprintln!("bbt: dictionary missing; downloading sources...");
+        } else {
+            eprintln!("bbt: dictionary missing; building from local sources...");
+        }
+    }
+    fetch_paths(&ecdict, &cedict, need_ecdict, need_cedict, false)?;
+    if !ecdict.exists() || !cedict.exists() {
+        bail!(
+            "dictionary sources missing at {} or {}",
+            ecdict.display(),
+            cedict.display()
+        );
+    }
+    if !quiet() {
+        eprintln!("bbt: building dictionary...");
+    }
+    build(Some(&ecdict), Some(&cedict), Some(dict))?;
+    drop(lock);
     Ok(())
 }
 
@@ -293,7 +375,9 @@ fn download(client: &Client, url: &str, path: &Path, force: bool, gzip: bool) ->
         file.sync_all()?;
         fs::rename(&tmp, path)?;
     }
-    eprintln!("\nwrote {}", path.display());
+    if !quiet() {
+        eprintln!("\nwrote {}", path.display());
+    }
     Ok(())
 }
 
@@ -309,11 +393,13 @@ fn stream_copy(reader: &mut impl Read, writer: &mut impl Write, path: &Path) -> 
         writer.write_all(&buffer[..read])?;
         total += read as u64;
         if total - last_report >= 1024 * 1024 {
-            eprint!(
-                "\r{} {:.1} MiB",
-                path.file_name().unwrap_or_default().to_string_lossy(),
-                total as f64 / 1_048_576.0
-            );
+            if !quiet() {
+                eprint!(
+                    "\r{} {:.1} MiB",
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                    total as f64 / 1_048_576.0
+                );
+            }
             last_report = total;
         }
     }
@@ -380,11 +466,13 @@ pub fn build(
     conn.execute_batch("ANALYZE;")?;
     drop(conn);
     fs::rename(&tmp, &out)?;
-    eprintln!(
-        "dict: en {en_count}, zh {zh_count}, total {} -> {}",
-        en_count + zh_count,
-        out.display()
-    );
+    if !quiet() {
+        eprintln!(
+            "dict: en {en_count}, zh {zh_count}, total {} -> {}",
+            en_count + zh_count,
+            out.display()
+        );
+    }
     Ok(DictInfo {
         path: out,
         total: en_count + zh_count,

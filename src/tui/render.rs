@@ -188,6 +188,21 @@ fn draw_lookup(frame: &mut Frame, app: &App, area: Rect) {
                 .style(app.theme.dim);
             frame.render_widget(paragraph, split[1]);
         }
+        LookupState::Installing { source } => {
+            let spinner = ["|", "/", "-", "\\"][app.spinner % 4];
+            let paragraph = Paragraph::new(format!(
+                "{spinner} installing dictionary (first run, about 73 MB)...\n\n{source}"
+            ))
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(app.theme.warn),
+            )
+            .style(app.theme.warn)
+            .wrap(Wrap { trim: false });
+            frame.render_widget(paragraph, split[1]);
+        }
         LookupState::NotFound => draw_empty(
             frame,
             split[1],
