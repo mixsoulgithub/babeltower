@@ -5,17 +5,44 @@ an offline SQLite dictionary; sentences go through DeepSeek. The wordbook is
 one CSV file, writable offline and mergeable with `aitr merge`. There is no
 daemon, web UI, database server, or network requirement for word lookup.
 
-## Build
+## Install
 
+```bash
+curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/install.sh | sh
 ```
+
+The `curl` installer needs no sudo. It downloads the release archive for the
+current platform, verifies the sha256 file, installs `aitr` into `~/.local/bin`
+(override with `--dir`), and accepts an explicit `--version`:
+
+```bash
+curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/install.sh | sh -s -- --version 0.1.0
+curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/install.sh | sh -s -- --dir "$HOME/bin"
+```
+
+Release assets are `babeltower-<target>.tar.gz` plus
+`babeltower-<target>.sha256`; the archive contains the `aitr` binary. Pushing a
+`v*` tag runs `.github/workflows/release.yml` and builds Linux x86_64 and macOS
+x86_64/arm64 assets.
+
+### From source
+
+```bash
 cargo build --release
 ./bin/aitr
 ```
 
-`bin/aitr` is a shell shim for `target/release/aitr`. To install:
+`bin/aitr` is a shell shim for `target/release/aitr`. To install a local build:
 
-```
+```bash
 ln -sfn ~/projects/babeltower/bin/aitr ~/.local/bin/aitr
+```
+
+After either install, fetch and build the offline dictionary once:
+
+```bash
+aitr dict fetch
+aitr dict build
 ```
 
 ## Data
