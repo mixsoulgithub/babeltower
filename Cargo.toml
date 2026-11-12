@@ -1,0 +1,31 @@
+[package]
+name = "babeltower"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "aitr"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+csv = "1"
+flate2 = "1"
+fs2 = "0.4"
+libc = "0.2"
+ratatui = "0.29"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+unicode-normalization = "0.1"
+unicode-width = "0.2"
+uuid = { version = "1", features = ["v4", "v5"] }
+
+[dev-dependencies]
+tempfile = "3"

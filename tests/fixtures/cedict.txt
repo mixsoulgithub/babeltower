@@ -1,0 +1,4 @@
+# fixture
+行 行 [xing2] /to walk/row/line/
+行 行 [hang2] /row/line/profession/
+銀行 银行 [yin2 hang2] /bank/
