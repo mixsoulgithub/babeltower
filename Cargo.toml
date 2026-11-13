@@ -1,6 +1,6 @@
 [package]
 name = "babeltower"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [[bin]]
@@ -22,10 +22,15 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
-thiserror = "2"
 unicode-normalization = "0.1"
 unicode-width = "0.2"
 uuid = { version = "1", features = ["v4", "v5"] }
 
 [dev-dependencies]
 tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

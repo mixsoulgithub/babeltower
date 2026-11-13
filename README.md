@@ -22,8 +22,9 @@ curl -LsSf https://raw.githubusercontent.com/mixsoulgithub/babeltower/main/insta
 
 Release assets are `babeltower-<target>.tar.gz` plus
 `babeltower-<target>.sha256`; the archive contains the `bbt` binary. Pushing a
-`v*` tag runs `.github/workflows/release.yml` and builds Linux x86_64 and macOS
-x86_64/arm64 assets.
+`v*` tag runs `.github/workflows/release.yml` and builds Linux x86_64 (GNU and
+musl) plus macOS x86_64/arm64 assets. The curl installer uses the musl build on
+Linux, so it does not depend on the host glibc version.
 
 ### From source
 
@@ -31,6 +32,20 @@ x86_64/arm64 assets.
 cargo build --release
 ./bin/bbt
 ```
+
+For a static Linux binary:
+
+```bash
+rustup target add x86_64-unknown-linux-musl
+sudo apt install musl-tools
+CC_x86_64_unknown_linux_musl=musl-gcc \
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc \
+cargo build --release --target x86_64-unknown-linux-musl
+```
+
+The release profile uses LTO, one codegen unit, and `strip = true`. The binary is
+still larger than a pure TUI like `graph-tui` because it also contains SQLite,
+a TLS HTTP stack, JSON/CSV parsing, and Unicode tables.
 
 `bin/bbt` is a shell shim for `target/release/bbt`. To install a local build:
 
