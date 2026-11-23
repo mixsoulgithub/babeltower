@@ -201,3 +201,22 @@ fn first_word_query_installs_dictionary() {
     assert!(String::from_utf8(output.stdout).unwrap().contains("盒子"));
     assert!(dict.exists());
 }
+
+// ask 只做问答：即使没有 API key 失败，也不能退化成查词写词表
+#[test]
+fn ask_never_writes_wordbook() {
+    let (dir, csv, dict) = setup();
+    let before = std::fs::read(&csv).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_bbt"))
+        .args(["ask", "hello"])
+        .env("BBT_CSV", &csv)
+        .env("BBT_DICT", &dict)
+        .env("BBT_CONFIG_DIR", dir.path().join("config"))
+        .env_remove("DEEPSEEK_API_KEY")
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "{:?}", output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("DEEPSEEK_API_KEY"), "{stderr}");
+    assert_eq!(before, std::fs::read(&csv).unwrap());
+}

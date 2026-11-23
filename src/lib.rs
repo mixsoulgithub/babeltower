@@ -1,5 +1,7 @@
+pub mod ask;
 pub mod cli;
 pub mod dict;
+pub mod llm;
 pub mod merge;
 pub mod store;
 pub mod text;

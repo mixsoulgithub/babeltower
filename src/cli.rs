@@ -1,10 +1,11 @@
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use csv::WriterBuilder;
 
+use crate::ask;
 use crate::dict;
 use crate::merge;
 use crate::store::Store;
@@ -47,6 +48,11 @@ enum RecordMode {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// 把文本（或 stdin）当作问题，用便宜的模型直接回答
+    Ask {
+        #[arg(value_name = "TEXT")]
+        text: Vec<String>,
+    },
     Merge {
         path: PathBuf,
         #[arg(long)]
@@ -148,7 +154,7 @@ fn lookup_and_print(text: &str, format: bool, record: RecordMode, force_ai: bool
     let mut save_phonetic: Option<String> = None;
     let mut save_tags: Option<String> = None;
     let translation = if use_ai {
-        let translator = Translator::new()?;
+        let translator = Translator::new();
         translator.translate(text)?.translation
     } else {
         if !dict::dict_available() {
@@ -249,6 +255,21 @@ fn write_stdout(bytes: &[u8]) -> Result<i32> {
 
 fn run_command(command: Command) -> Result<i32> {
     match command {
+        Command::Ask { text } => {
+            // 纯问答：不打开 Store，不查词，不写词表
+            let input = if text.is_empty() {
+                if stdin_is_tty() {
+                    bail!("bbt ask: no input");
+                }
+                let mut value = String::new();
+                io::stdin().read_to_string(&mut value)?;
+                value
+            } else {
+                text.join(" ")
+            };
+            let answer = ask::ask(&input)?;
+            write_stdout(format!("{answer}\n").as_bytes())?;
+        }
         Command::Merge {
             path,
             dry_run,

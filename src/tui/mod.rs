@@ -524,7 +524,7 @@ impl App {
         let tx = self.ai_tx.clone();
         std::thread::spawn(move || {
             let result = Translator::new()
-                .and_then(|translator| translator.translate(&source))
+                .translate(&source)
                 .map(|result| (result.translation, result.cached))
                 .map_err(|error| format!("{error:#}"));
             let _ = tx.send(AiMessage {

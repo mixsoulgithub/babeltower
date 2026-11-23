@@ -148,6 +148,8 @@ bbt merge other.csv [--dry-run] [--report report.csv]
 bbt import old-v1.csv
 bbt gc [--days 90] [--force]
 bbt dict fetch|build|info
+bbt ask "xargs -I{} mv {} /tmp"   # Q&A / explain a snippet, no wordbook write
+echo "tar -xzvf a.tgz" | bbt ask
 bbt --version
 ```
 
