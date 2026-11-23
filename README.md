@@ -214,3 +214,16 @@ cargo build --release
 
 Fixtures cover ECDICT multi-sense rows, CC-CEDICT multi-entry heads, stemming,
 v1 migration, merge idempotency, tombstones, and CLI recording.
+
+## Release
+
+Release notes come from commit messages: the same text becomes the CHANGELOG
+section, the release commit body, the annotated tag, and the GitHub Release
+notes.
+
+```
+./scripts/release 0.1.4 --dry-run
+./scripts/release 0.1.4 --push
+```
+
+See `RELEASING.md` for the commit types and the full flow.
