@@ -490,6 +490,7 @@ impl App {
             match message.result {
                 Ok((translation, cached)) => match message.context {
                     AiContext::Lookup => {
+                        self.record_lookup(&message.source, &translation, None, None);
                         self.lookup_state = LookupState::Sentence {
                             source: message.source,
                             translation,
@@ -584,11 +585,36 @@ impl App {
                 }
             }
             Ok(result) => {
+                if let Some(first) = result.entries.first() {
+                    let translation = dict::entries_translation(&result.entries);
+                    if !translation.is_empty() {
+                        let word = first.head.clone();
+                        let phonetic = first.phonetic.clone();
+                        let tags = first.tags.clone();
+                        self.record_lookup(&word, &translation, Some(&phonetic), Some(&tags));
+                    }
+                }
                 self.lookup_state = LookupState::Entries(result.entries);
             }
             Err(error) => {
                 self.lookup_state = LookupState::Error(format!("{error:#}"));
             }
+        }
+    }
+
+    fn record_lookup(
+        &mut self,
+        word: &str,
+        translation: &str,
+        phonetic: Option<&str>,
+        tags: Option<&str>,
+    ) {
+        match self.store.record(word, translation, phonetic, tags) {
+            Ok((_, created)) => {
+                self.reload_rows();
+                self.set_message(if created { "recorded new" } else { "recorded" }, false);
+            }
+            Err(error) => self.set_message(format!("record failed: {error:#}"), true),
         }
     }
 

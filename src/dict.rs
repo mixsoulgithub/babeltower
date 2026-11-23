@@ -639,16 +639,17 @@ fn hash_key(parts: &[&str]) -> u64 {
     u64::from_be_bytes(digest[..8].try_into().expect("digest length"))
 }
 
-pub fn cli_lookup_text(result: &LookupResult) -> String {
-    if result.entries.is_empty() {
-        return String::new();
-    }
+pub fn entries_translation(entries: &[Entry]) -> String {
     let mut values = Vec::new();
-    for entry in &result.entries {
+    for entry in entries {
         let value = entry_translation(entry);
         if !value.is_empty() && !values.contains(&value) {
             values.push(value);
         }
     }
     values.join("; ")
+}
+
+pub fn cli_lookup_text(result: &LookupResult) -> String {
+    entries_translation(&result.entries)
 }

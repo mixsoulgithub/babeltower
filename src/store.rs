@@ -155,6 +155,28 @@ impl Store {
         phonetic: Option<&str>,
         tags: Option<&str>,
     ) -> Result<(WordRow, bool)> {
+        self.put(word, translation, phonetic, tags, true)
+    }
+
+    /// 记录一次成功查询：已有词条只累加 hit/last，不覆盖用户编辑过的释义。
+    pub fn record(
+        &self,
+        word: &str,
+        translation: &str,
+        phonetic: Option<&str>,
+        tags: Option<&str>,
+    ) -> Result<(WordRow, bool)> {
+        self.put(word, translation, phonetic, tags, false)
+    }
+
+    fn put(
+        &self,
+        word: &str,
+        translation: &str,
+        phonetic: Option<&str>,
+        tags: Option<&str>,
+        overwrite: bool,
+    ) -> Result<(WordRow, bool)> {
         let word = word.trim();
         if word.is_empty() {
             bail!("word required");
@@ -167,16 +189,16 @@ impl Store {
                 if row.deleted != 0 {
                     row.deleted = 0;
                 }
-                if !translation.is_empty() {
+                if !translation.is_empty() && (overwrite || row.translation.trim().is_empty()) {
                     row.translation = translation.to_string();
                 }
                 if let Some(value) = phonetic {
-                    if !value.trim().is_empty() {
+                    if !value.trim().is_empty() && (overwrite || row.phonetic.trim().is_empty()) {
                         row.phonetic = value.trim().to_string();
                     }
                 }
                 if let Some(value) = tags {
-                    if !value.trim().is_empty() {
+                    if !value.trim().is_empty() && (overwrite || row.tags.trim().is_empty()) {
                         row.tags = value.trim().to_string();
                     }
                 }

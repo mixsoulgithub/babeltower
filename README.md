@@ -1,9 +1,11 @@
 # babeltower
 
 Single-binary language learning entry for the terminal. Words are looked up in
-an offline SQLite dictionary; sentences go through DeepSeek. The wordbook is
-one CSV file, writable offline and mergeable with `bbt merge`. There is no
-daemon, web UI, database server, or network requirement for word lookup.
+an offline SQLite dictionary; sentences go through DeepSeek. Every successful
+query is written to the wordbook by default (`--no-record` opts out); existing
+translations are kept unless `-r` or the TUI `s` key forces an update. The
+wordbook is one CSV file, writable offline and mergeable with `bbt merge`. There
+is no daemon, web UI, database server, or network requirement for word lookup.
 
 ## Install
 
@@ -135,9 +137,10 @@ lookup never touches the network.
 
 ```
 bbt                        # TUI
-bbt box                    # dictionary or AI, prints translation
+bbt box                    # dictionary or AI, print and record
 bbt -f box                 # source + translation
-bbt -r box                 # query and save
+bbt -r box                 # force-update the saved translation
+bbt --no-record box        # query without touching the wordbook
 bbt -l                     # wordbook CSV: hit,word,translation,last
 echo text | bbt            # stdin
 bbt --ai some text         # force AI
@@ -147,6 +150,12 @@ bbt gc [--days 90] [--force]
 bbt dict fetch|build|info
 bbt --version
 ```
+
+A successful word lookup or sentence translation is recorded automatically.
+An existing row only gets `hit`/`last` updated; its `translation`, `phonetic`,
+and `tags` are preserved unless empty. `-r` forces the translation to the
+fresh result. Failed lookups do not write. If the wordbook cannot be written,
+the translation still prints and a warning goes to stderr.
 
 Merge is row-level last-writer-wins on `(updated, origin)`. Counters `hit` and
 `reviews` take the maximum; `last`/`reviewed` take the larger ISO date; other
@@ -165,9 +174,12 @@ Lookup:
 - `i`/`a` insert, `/` clear and insert, `j/k` select, `Ctrl-d/u` scroll
 - input: Left/Right, Home/End, Delete, Alt-Left/Alt-Right by word,
   Alt-Backspace or Ctrl-W deletes the previous word
-- Enter query or open detail, `s` save, `:ai` force AI, `Esc` clear
+- Enter query or open detail, `s` force-save the selected entry, `:ai` force
+  AI, `Esc` clear
 - word results show every sense and `Enter detail (N more)` when folded;
   the detail layer scrolls with `j/k`
+- successful word and sentence lookups are recorded automatically; `s`
+  overwrites the saved translation with the selected entry
 
 Words:
 

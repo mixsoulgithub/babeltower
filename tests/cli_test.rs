@@ -72,6 +72,71 @@ fn formats_and_unknown_words() {
 }
 
 #[test]
+fn queries_record_by_default_and_keep_edits() {
+    let (dir, csv, dict) = setup();
+    let output = run(dir.path(), &csv, &dict, &["box"]);
+    assert!(output.status.success(), "{:?}", output);
+
+    let store = babeltower::store::Store::open(Some(csv.clone())).unwrap();
+    let row = store
+        .words()
+        .unwrap()
+        .into_iter()
+        .find(|row| row.word == "box")
+        .expect("box recorded");
+    assert_eq!(row.hit, 1);
+    assert!(row.translation.contains("盒子"));
+    assert!(row.translation.contains("拳击"));
+
+    store
+        .update(
+            &row.uuid,
+            babeltower::store::WordUpdate {
+                translation: Some("我的释义".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    let output = run(dir.path(), &csv, &dict, &["box"]);
+    assert!(output.status.success());
+    let store = babeltower::store::Store::open(Some(csv.clone())).unwrap();
+    let row = store
+        .words()
+        .unwrap()
+        .into_iter()
+        .find(|row| row.word == "box")
+        .unwrap();
+    assert_eq!(row.hit, 2);
+    assert_eq!(row.translation, "我的释义");
+
+    let output = run(dir.path(), &csv, &dict, &["-r", "box"]);
+    assert!(output.status.success());
+    let store = babeltower::store::Store::open(Some(csv.clone())).unwrap();
+    let row = store
+        .words()
+        .unwrap()
+        .into_iter()
+        .find(|row| row.word == "box")
+        .unwrap();
+    assert_eq!(row.hit, 3);
+    assert!(row.translation.contains("盒子"));
+}
+
+#[test]
+fn no_record_leaves_wordbook_untouched() {
+    let (dir, csv, dict) = setup();
+    let before = std::fs::read_to_string(&csv).unwrap();
+    let output = run(dir.path(), &csv, &dict, &["--no-record", "box"]);
+    assert!(output.status.success(), "{:?}", output);
+    assert_eq!(std::fs::read_to_string(&csv).unwrap(), before);
+
+    let missing = run(dir.path(), &csv, &dict, &["notaword"]);
+    assert!(!missing.status.success());
+    assert_eq!(std::fs::read_to_string(&csv).unwrap(), before);
+}
+
+#[test]
 fn merges_and_imports_v1() {
     let (dir, csv, dict) = setup();
     let other = dir.path().join("other.csv");

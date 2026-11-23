@@ -20,8 +20,14 @@ use crate::translate::Translator;
 struct Cli {
     #[arg(short = 'f', long)]
     format: bool,
-    #[arg(short = 'r', long)]
+    #[arg(short = 'r', long, help = "force-update the saved translation")]
     record: bool,
+    #[arg(
+        long,
+        conflicts_with = "record",
+        help = "do not write the query to the wordbook"
+    )]
+    no_record: bool,
     #[arg(short = 'l', long)]
     list: bool,
     #[arg(long)]
@@ -30,6 +36,13 @@ struct Cli {
     command: Option<Command>,
     #[arg(value_name = "TEXT")]
     text: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RecordMode {
+    Auto,
+    Force,
+    Off,
 }
 
 #[derive(Subcommand, Debug)]
@@ -118,10 +131,17 @@ fn run(cli: Cli) -> Result<i32> {
         eprintln!("bbt: no input");
         return Ok(1);
     }
-    lookup_and_print(&text, cli.format, cli.record, cli.ai)
+    let record = if cli.no_record {
+        RecordMode::Off
+    } else if cli.record {
+        RecordMode::Force
+    } else {
+        RecordMode::Auto
+    };
+    lookup_and_print(&text, cli.format, record, cli.ai)
 }
 
-fn lookup_and_print(text: &str, format: bool, record: bool, force_ai: bool) -> Result<i32> {
+fn lookup_and_print(text: &str, format: bool, record: RecordMode, force_ai: bool) -> Result<i32> {
     let classified = classify(text);
     let use_ai = force_ai || matches!(classified, Classified::Sentence);
     let mut save_word = text.trim().to_string();
@@ -161,14 +181,30 @@ fn lookup_and_print(text: &str, format: bool, record: bool, force_ai: bool) -> R
         value
     };
     let save_translation = translation.clone();
-    if record {
-        let store = Store::open(None)?;
-        store.upsert(
-            &save_word,
-            &save_translation,
-            save_phonetic.as_deref(),
-            save_tags.as_deref(),
-        )?;
+    match record {
+        RecordMode::Off => {}
+        RecordMode::Auto => match Store::open(None) {
+            Ok(store) => {
+                if let Err(error) = store.record(
+                    &save_word,
+                    &save_translation,
+                    save_phonetic.as_deref(),
+                    save_tags.as_deref(),
+                ) {
+                    eprintln!("bbt: record failed: {error:#}");
+                }
+            }
+            Err(error) => eprintln!("bbt: record failed: {error:#}"),
+        },
+        RecordMode::Force => {
+            let store = Store::open(None)?;
+            store.upsert(
+                &save_word,
+                &save_translation,
+                save_phonetic.as_deref(),
+                save_tags.as_deref(),
+            )?;
+        }
     }
     let output = if format {
         if text.as_bytes().len() > 80 {
