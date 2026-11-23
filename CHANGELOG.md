@@ -4,6 +4,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), version
 follow [semantic versioning](https://semver.org/spec/v2.0.0.html). Release notes are
 generated from commit messages by `scripts/release`; see `RELEASING.md`.
 
+## [0.1.4] - 2026-11-23
+
+### Added
+
+- add bbt ask for direct model answers
+
 ## [0.1.3] - 2026-11-23
 
 ### Added
@@ -33,6 +39,7 @@ generated from commit messages by `scripts/release`; see `RELEASING.md`.
 
 - Rename the binary from aitr to bbt
 
+[0.1.4]: https://github.com/mixsoulgithub/babeltower/releases/tag/v0.1.4
 [0.1.3]: https://github.com/mixsoulgithub/babeltower/releases/tag/v0.1.3
 [0.1.2]: https://github.com/mixsoulgithub/babeltower/releases/tag/v0.1.2
 [0.1.1]: https://github.com/mixsoulgithub/babeltower/releases/tag/v0.1.1
